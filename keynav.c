@@ -648,7 +648,6 @@ int multiply_by(int num, char *args, float default_val) {
     pct = default_val;
 
   value = (int)((num * (pct * precision)) / precision);
-  printf("multiply by oldvalue %d, nowvalue %d\n", num, value);
   return value;
 }
 
@@ -1130,14 +1129,10 @@ void cmd_enlarge(char *args) {
     return;
   int orig_h = wininfo.h;
   int orig_w = wininfo.w;
-  printf("oldcenter %d,%d\n", wininfo.x + wininfo.w/2, wininfo.y + wininfo.h/2);
-  printf("line %d\n", __LINE__);
   wininfo.w = multiply_by(wininfo.w, args, 2.);
-  printf("line %d\n", __LINE__);
   wininfo.h = multiply_by(wininfo.h, args, 2.);
   wininfo.x += orig_w/2 - wininfo.w/2;
   wininfo.y += orig_h/2 - wininfo.h/2;
-  printf("newcenter %d,%d\n", wininfo.x + wininfo.w/2, wininfo.y + wininfo.h/2);
 
 }
 
@@ -1145,7 +1140,6 @@ void cmd_enlarge_up(char *args) {
   if (!ISACTIVE)
     return;
   int orig = wininfo.h;
-  printf("line %d\n", __LINE__);
   wininfo.h = multiply_by(wininfo.h, args, 2.);
   wininfo.y -= orig;
 }
@@ -1153,7 +1147,6 @@ void cmd_enlarge_up(char *args) {
 void cmd_enlarge_down(char *args) {
   if (!ISACTIVE)
     return;
-  printf("line %d\n", __LINE__);
   wininfo.h = multiply_by(wininfo.h, args, 2.);
 }
 
@@ -1161,7 +1154,6 @@ void cmd_enlarge_left(char *args) {
   if (!ISACTIVE)
     return;
   int orig = wininfo.w;
-  printf("line %d\n", __LINE__);
   wininfo.w = multiply_by(wininfo.w, args, 2.);
   wininfo.x -= orig;
 }
@@ -1169,7 +1161,6 @@ void cmd_enlarge_left(char *args) {
 void cmd_enlarge_right(char *args) {
   if (!ISACTIVE)
     return;
-  printf("line %d\n", __LINE__);
   wininfo.w = multiply_by(wininfo.w, args, 2.);
 }
 
