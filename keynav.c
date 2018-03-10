@@ -140,6 +140,11 @@ void cmd_cut_down(char *args);
 void cmd_cut_left(char *args);
 void cmd_cut_right(char *args);
 void cmd_cut_up(char *args);
+void cmd_enlarge(char *args);
+void cmd_enlarge_up(char *args);
+void cmd_enlarge_down(char *args);
+void cmd_enlarge_left(char *args);
+void cmd_enlarge_right(char *args);
 void cmd_daemonize(char *args);
 void cmd_doubleclick(char *args);
 void cmd_drag(char *args);
@@ -148,6 +153,7 @@ void cmd_toggle_start(char *args);
 void cmd_grid(char *args);
 void cmd_grid_nav(char *args);
 void cmd_history_back(char *args);
+void cmd_info(char *args);
 void cmd_loadconfig(char *args);
 void cmd_move_down(char *args);
 void cmd_move_left(char *args);
@@ -203,6 +209,11 @@ dispatch_t dispatch[] = {
   "cut-down", cmd_cut_down,
   "cut-left", cmd_cut_left,
   "cut-right", cmd_cut_right,
+  "enlarge", cmd_enlarge,
+  "enlarge-up", cmd_enlarge_up,
+  "enlarge-down", cmd_enlarge_down,
+  "enlarge-left", cmd_enlarge_left,
+  "enlarge-right", cmd_enlarge_right,
   "move-up", cmd_move_up,
   "move-down", cmd_move_down,
   "move-left", cmd_move_left,
@@ -233,6 +244,7 @@ dispatch_t dispatch[] = {
   "restart", cmd_restart,
   "record", cmd_record,
   "playback", cmd_playback,
+  "info", cmd_info,
   NULL, NULL,
 };
 
@@ -624,6 +636,19 @@ int parse_config_line(char *orig_line) {
   free(keyseq);
   free(line);
   return 0;
+}
+
+int multiply_by(int num, char *args, float default_val) {
+  static float precision = 100000.0;
+  float pct = 0.0;
+  int value = 0;
+
+  /* Parse a float. If this fails, assume the default value */
+  if (sscanf(args, "%f", &pct) <= 0)
+    pct = default_val;
+
+  value = (int)((num * (pct * precision)) / precision);
+  return value;
 }
 
 int percent_of(int num, char *args, float default_val) {
@@ -1098,6 +1123,47 @@ void cmd_cut_right(char *args) {
   wininfo.x += orig - wininfo.w;
 }
 
+/** Make grid bigger */
+void cmd_enlarge(char *args) {
+  if (!ISACTIVE)
+    return;
+  int orig_h = wininfo.h;
+  int orig_w = wininfo.w;
+  wininfo.w = multiply_by(wininfo.w, args, 2.);
+  wininfo.h = multiply_by(wininfo.h, args, 2.);
+  wininfo.x += orig_w/2 - wininfo.w/2;
+  wininfo.y += orig_h/2 - wininfo.h/2;
+
+}
+
+void cmd_enlarge_up(char *args) {
+  if (!ISACTIVE)
+    return;
+  int orig = wininfo.h;
+  wininfo.h = multiply_by(wininfo.h, args, 2.);
+  wininfo.y -= orig;
+}
+
+void cmd_enlarge_down(char *args) {
+  if (!ISACTIVE)
+    return;
+  wininfo.h = multiply_by(wininfo.h, args, 2.);
+}
+
+void cmd_enlarge_left(char *args) {
+  if (!ISACTIVE)
+    return;
+  int orig = wininfo.w;
+  wininfo.w = multiply_by(wininfo.w, args, 2.);
+  wininfo.x -= orig;
+}
+
+void cmd_enlarge_right(char *args) {
+  if (!ISACTIVE)
+    return;
+  wininfo.w = multiply_by(wininfo.w, args, 2.);
+}
+
 void cmd_move_up(char *args) {
   if (!ISACTIVE)
     return;
@@ -1350,6 +1416,13 @@ void cmd_daemonize(char *args) {
 
 void cmd_playback(char *args) {
   appstate.playback = 1;
+}
+
+void cmd_info(char *args) {
+  printf("window pos %d,%d, size %dx%d\n", wininfo.x, wininfo.y, wininfo.w, wininfo.h);
+  int xloc, yloc;
+  xdo_get_mouse_location(xdo, &xloc, &yloc, NULL);
+  printf("mouse pos %d,%d\n", xloc, yloc);
 }
 
 void cmd_record(char *args) {
