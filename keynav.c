@@ -21,6 +21,7 @@
 #include <X11/keysym.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xinerama.h>
+#include <X11/extensions/Xrandr.h>
 #include <glib.h>
 #include <cairo-xlib.h>
 
@@ -328,8 +329,9 @@ int parse_mods(char *keyseq) {
       modmask |= Mod4Mask;
     if (!strcasecmp(mod, "mod1"))
       modmask |= Mod1Mask;
+    // See masking of state in handle_keypress
     if (!strcasecmp(mod, "mod2"))
-      modmask |= Mod2Mask;
+      printf("Error in configuration: keynav does not support mod2 modifier, but other modifiers are supported.");
     if (!strcasecmp(mod, "mod3"))
       modmask |= Mod3Mask;
     if (!strcasecmp(mod, "mod4"))
@@ -1153,15 +1155,17 @@ void cmd_windowzoom(char *args) {
   unsigned int width, height, border_width, depth;
 
   xdo_get_active_window(xdo, &curwin);
-  XGetGeometry(xdo->xdpy, curwin, &rootwin, &x, &y, &width, &height,
-               &border_width, &depth);
-  XTranslateCoordinates(xdo->xdpy, curwin, rootwin,
-                        -border_width, -border_width, &x, &y, &dummy_win);
+  if (curwin) {
+    XGetGeometry(xdo->xdpy, curwin, &rootwin, &x, &y, &width, &height,
+                 &border_width, &depth);
+    XTranslateCoordinates(xdo->xdpy, curwin, rootwin,
+                          -border_width, -border_width, &x, &y, &dummy_win);
 
-  wininfo.x = x;
-  wininfo.y = y;
-  wininfo.w = width;
-  wininfo.h = height;
+    wininfo.x = x;
+    wininfo.y = y;
+    wininfo.w = width;
+    wininfo.h = height;
+  }
 }
 
 void cmd_warp(char *args) {
@@ -1535,16 +1539,10 @@ void viewport_left() {
 
 void handle_keypress(XKeyEvent *e) {
   int i;
-  /* If a mouse button is pressed (like, when we're dragging),
-   * then the 'mods' will include values like Button1Mask.
-   * Let's remove those, as they cause breakage */
-  e->state &= ~(Button1Mask | Button2Mask | Button3Mask | Button4Mask | Button5Mask);
 
-  /* Ignore LockMask (Numlock, etc) and Mod2Mask (shift, etc) */
-  e->state &= ~(LockMask | Mod2Mask);
-
-  /* Ignore different keyboard layouts (e.g. russian) */
-  e->state &= ~(1<<13);
+  /* Only pay attention to shift. In particular, things not included here are
+   * mouse buttons (active when dragging), numlock (including Mod2Mask) */
+  e->state &= (ShiftMask | ControlMask | Mod1Mask | Mod3Mask | Mod4Mask | Mod4Mask);
 
   if (appstate.recording == record_getkey) {
     if (handle_recording(e) == HANDLE_STOP) {
@@ -1717,7 +1715,7 @@ void handle_commands(char *commands) {
       g_ptr_array_add(active_recording->commands, (gpointer) strdup(tok));
     }
 
-    for (i = 0; dispatch[i].command; i++) {
+    for (i = 0; dispatch[i].command && !found; i++) {
       /* XXX: This approach means we can't have one command be a subset of
        * another. For example, 'grid' and 'grid-foo' will fail because when you
        * use 'grid-foo' it'll match 'grid' first.
@@ -1741,7 +1739,6 @@ void handle_commands(char *commands) {
 
         found = 1;
         dispatch[i].func(args);
-        break;
       }
     }
 
@@ -1818,6 +1815,7 @@ void query_screen_xinerama() {
   XineramaScreenInfo *screeninfo;
 
   screeninfo = XineramaQueryScreens(dpy, &nviewports);
+  free(viewports);
   viewports = calloc(nviewports, sizeof(viewport_t));
   for (i = 0; i < nviewports; i++) {
     viewports[i].x = screeninfo[i].x_org;
@@ -1835,6 +1833,7 @@ void query_screen_normal() {
   int i;
   Screen *s;
   nviewports = ScreenCount(dpy);
+  free(viewports);
   viewports = calloc(nviewports, sizeof(viewport_t));
 
   for (i = 0; i < nviewports; i++) {
@@ -2055,6 +2054,15 @@ int main(int argc, char **argv) {
    * before we try to daemonize */
   XSync(dpy, 0);
 
+  /* If xrandr is enabled, ask to receive events for screen configuration
+   * changes. */
+  int xrandr_event_base = 0;
+  int xrandr_error_base = 0;
+  int xrandr = XRRQueryExtension (dpy, &xrandr_event_base, &xrandr_error_base);
+  if (xrandr) {
+    XRRSelectInput(dpy, DefaultRootWindow(dpy), RRScreenChangeNotifyMask);
+  }
+
   if (daemonize) {
     printf("Daemonizing now...\n");
     daemon(0, 0);
@@ -2107,7 +2115,11 @@ int main(int argc, char **argv) {
       case MappingNotify: // when keyboard mapping changes
         break;
       default:
-        printf("Unexpected X11 event: %d\n", e.type);
+        if (e.type == xrandr_event_base + RRScreenChangeNotify) {
+          query_screens();
+        } else {
+          printf("Unexpected X11 event: %d\n", e.type);
+        }
         break;
     }
   }
