@@ -805,13 +805,13 @@ void updategridtext(Window win, struct wininfo *info, int apply_clip, int draw) 
   x_off = info->border_thickness / 2;
   y_off = info->border_thickness / 2;
 
-  cairo_text_extents_t te;
-#define FONTSIZE 18
+  cairo_text_extents_t te; 
+  int fontsize = 18;
   if (draw) {
     cairo_new_path(canvas_cairo);
     cairo_select_font_face(canvas_cairo, "Courier", CAIRO_FONT_SLANT_NORMAL,
                            CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(canvas_cairo, FONTSIZE);
+    cairo_set_font_size(canvas_cairo, fontsize);
     cairo_text_extents(canvas_cairo, "A", &te);
   }
 
@@ -832,6 +832,7 @@ void updategridtext(Window win, struct wininfo *info, int apply_clip, int draw) 
 
   // draw either row labels, or column labels
   char label[2] = "A";
+  int last_rect = 0;
   for (int idx = 0; idx < info->grid_rows; idx++) {
     int rectwidth = te.width + 20;
     int rectheight = te.height + 10;
@@ -839,41 +840,58 @@ void updategridtext(Window win, struct wininfo *info, int apply_clip, int draw) 
     int ypos = cell_height * (select_row ? idx : row) ;
 
     // draw column label outside of box
-    if(select_row) {
-        ypos += y_off + (cell_height / 2);
+    if(select_row || ypos == 0) {
+      ypos += y_off + (cell_height / 2);
     }
     else {
-        ypos -= y_off;
+      ypos -= y_off;
     }
 
-    cairo_rectangle(canvas_cairo,
-                    xpos - rectwidth / 2 + te.x_bearing / 2,
-                    ypos - rectheight / 2 + te.y_bearing / 2,
-                    rectwidth, rectheight);
-    if (draw) {
-      cairo_path_t *pathcopy;
-      pathcopy = cairo_copy_path(canvas_cairo);
-      cairo_set_line_width(shape_cairo, 2);
-
-      cairo_set_source_rgb(canvas_cairo, 0.7, 1, 0.7);
-      cairo_fill(canvas_cairo);
-      cairo_append_path(canvas_cairo, pathcopy);
-      cairo_set_source_rgb(canvas_cairo, 0.5, 0.5, 0);
-      cairo_stroke(canvas_cairo);
-      cairo_path_destroy(pathcopy);
-
-      cairo_set_source_rgb(canvas_cairo, 0, 0, 0);
-      cairo_fill(canvas_cairo);
-      cairo_move_to(canvas_cairo, xpos - te.width / 2, ypos);
-      cairo_show_text(canvas_cairo, label);
+    // check whether we need to draw this label
+    int draw_label = 1;
+    if(select_row) {
+      draw_label = ypos > last_rect;
+      if(draw_label) {
+        last_rect = ypos + rectheight;
+      }
+    }
+    else {
+      draw_label = xpos > last_rect;
+      if(draw_label) {
+        last_rect = xpos + rectwidth;
+      }
     }
 
-    if (apply_clip) {
-      clip_rectangles[rect].x = xpos - rectwidth / 2 + te.x_bearing / 2;
-      clip_rectangles[rect].y = ypos - rectheight / 2 + te.y_bearing / 2;
-      clip_rectangles[rect].width = rectwidth + 1;
-      clip_rectangles[rect].height =  rectheight + 1;
-      rect++;
+    if(draw_label) {
+      cairo_rectangle(canvas_cairo,
+                      xpos - rectwidth / 2 + te.x_bearing / 2,
+                      ypos - rectheight / 2 + te.y_bearing / 2,
+                      rectwidth, rectheight);
+      if (draw) {
+        cairo_path_t *pathcopy;
+        pathcopy = cairo_copy_path(canvas_cairo);
+        cairo_set_line_width(shape_cairo, 2);
+  
+        cairo_set_source_rgb(canvas_cairo, 0.7, 1, 0.7);
+        cairo_fill(canvas_cairo);
+        cairo_append_path(canvas_cairo, pathcopy);
+        cairo_set_source_rgb(canvas_cairo, 0.5, 0.5, 0);
+        cairo_stroke(canvas_cairo);
+        cairo_path_destroy(pathcopy);
+  
+        cairo_set_source_rgb(canvas_cairo, 0, 0, 0);
+        cairo_fill(canvas_cairo);
+        cairo_move_to(canvas_cairo, xpos - te.width / 2, ypos);
+        cairo_show_text(canvas_cairo, label);
+      }
+  
+      if (apply_clip) {
+        clip_rectangles[rect].x = xpos - rectwidth / 2 + te.x_bearing / 2;
+        clip_rectangles[rect].y = ypos - rectheight / 2 + te.y_bearing / 2;
+        clip_rectangles[rect].width = rectwidth + 1;
+        clip_rectangles[rect].height =  rectheight + 1;
+        rect++;
+      }
     }
     label[0]++;
   } /* Draw rectangles and text */
