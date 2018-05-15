@@ -855,14 +855,14 @@ void updategridtext(Window win, struct wininfo *info, int apply_clip, int draw) 
       pathcopy = cairo_copy_path(canvas_cairo);
       cairo_set_line_width(shape_cairo, 2);
 
-      cairo_set_source_rgb(canvas_cairo, 0, .2, 0);
+      cairo_set_source_rgb(canvas_cairo, 0.7, 1, 0.7);
       cairo_fill(canvas_cairo);
       cairo_append_path(canvas_cairo, pathcopy);
-      cairo_set_source_rgb(canvas_cairo, .8, .8, 0);
+      cairo_set_source_rgb(canvas_cairo, 0.5, 0.5, 0);
       cairo_stroke(canvas_cairo);
       cairo_path_destroy(pathcopy);
 
-      cairo_set_source_rgb(canvas_cairo, .8, .8, .8);
+      cairo_set_source_rgb(canvas_cairo, 0, 0, 0);
       cairo_fill(canvas_cairo);
       cairo_move_to(canvas_cairo, xpos - te.width / 2, ypos);
       cairo_show_text(canvas_cairo, label);
