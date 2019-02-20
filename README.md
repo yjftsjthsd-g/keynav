@@ -24,6 +24,20 @@ via `make install`.
 On FreeBSD (and, I expect, other non-GNU platforms), you will want to use gmake.
 
 
+Platforms
+---------
+
+| OS             |      Dependencies      |   Notes   |
+|----------------|------------------------|-----------|
+| Debian, Ubuntu |  libcairo2-dev libxinerama-dev libxdo-dev |  |
+| openSUSE Tumbleweed |    xdotool-devel  |           |
+| NetBSD         | xdotool                | Use gmake |
+
+Note that the dependencies listed here may be incomplete; I've only recorded the
+packages that I needed to install, and some packages may already be installed by
+default.
+
+
 FAQ
 ---
 
