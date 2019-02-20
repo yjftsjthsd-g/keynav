@@ -1,0 +1,15 @@
+image: ubuntu
+
+before_script:
+  - apt-get update -qq
+
+stages:
+  - build
+
+build:
+  stage: build
+  script:
+    - apt-get install -y -qq make gcc libcairo2-dev libxinerama-dev libxdo-dev
+    - gcc -v
+    - CC=gcc make
+

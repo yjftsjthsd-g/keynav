@@ -9,3 +9,4 @@
 
 .*
 !.gitignore
+!.gitlab-ci.yml
