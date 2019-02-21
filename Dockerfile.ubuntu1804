@@ -11,10 +11,10 @@ RUN ["useradd", "builder"]
 RUN ["mkdir", "-p", "-m", "755", "/opt/keynav"]
 RUN ["chown", "-R", "builder:nogroup", "/opt/keynav"]
 
-# Set the working directory to /app
+# Set the working directory
 WORKDIR /opt/keynav
 
-# Copy the current directory contents into the container at /app
+# Copy the current directory contents into the container
 COPY . /opt/keynav
 
 # Run build
