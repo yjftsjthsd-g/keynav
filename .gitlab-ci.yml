@@ -9,7 +9,7 @@ stages:
 build:
   stage: build
   script:
-    - apt-get install -y -qq make gcc libcairo2-dev libxinerama-dev libxdo-dev
+    - apt-get install -y -qq make gcc libcairo2-dev libxinerama-dev libxdo-dev libxrandr-dev
     - gcc -v
     - CC=gcc make
 
