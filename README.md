@@ -31,7 +31,7 @@ Platforms
 | Alpine Linux   | cairo-dev libxinerama-dev xdotool-dev libxrandr-dev musl-dev |  |
 | Debian, Ubuntu |  libcairo2-dev libxinerama-dev libxdo-dev libxrandr-dev |  |
 | NetBSD         | xdotool                | Use gmake |
-| openSUSE Leap/Tumbleweed | libcairo2 cairo-devel libXinerama-devel xdotool-devel libXrandr-devel glib2-devel |           |
+| openSUSE Leap/Tumbleweed | cairo-devel libXinerama-devel xdotool-devel libXrandr-devel glib2-devel |           |
 
 Listed dependencies are in addition to GNU make and a C compiler.
 
