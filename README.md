@@ -28,7 +28,7 @@ Platforms
 
 | OS             |      Dependencies      |   Notes   |
 |----------------|------------------------|-----------|
-| Debian, Ubuntu |  libcairo2-dev libxinerama-dev libxdo-dev |  |
+| Debian, Ubuntu |  libcairo2-dev libxinerama-dev libxdo-dev libxrandr-dev |  |
 | openSUSE Tumbleweed |    xdotool-devel  |           |
 | NetBSD         | xdotool                | Use gmake |
 
