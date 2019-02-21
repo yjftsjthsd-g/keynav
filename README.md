@@ -32,6 +32,7 @@ Platforms
 | Debian, Ubuntu |  libcairo2-dev libxinerama-dev libxdo-dev libxrandr-dev |  |
 | NetBSD         | xdotool                | Use gmake |
 | openSUSE Leap/Tumbleweed | cairo-devel libXinerama-devel xdotool-devel libXrandr-devel glib2-devel |           |
+| RHEL/CentOS 7  | cairo-devel libXinerama-devel libxdo-devel libXrandr-devel glib2-devel | Requires EPEL |
 
 Listed dependencies are in addition to GNU make and a C compiler.
 
