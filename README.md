@@ -28,13 +28,12 @@ Platforms
 
 | OS             |      Dependencies      |   Notes   |
 |----------------|------------------------|-----------|
+| Alpine Linux   | cairo-dev libxinerama-dev xdotool-dev libxrandr-dev musl-dev |  |
 | Debian, Ubuntu |  libcairo2-dev libxinerama-dev libxdo-dev libxrandr-dev |  |
-| openSUSE Tumbleweed |    xdotool-devel  |           |
 | NetBSD         | xdotool                | Use gmake |
+| openSUSE Tumbleweed |    xdotool-devel  |           |
 
-Note that the dependencies listed here may be incomplete; I've only recorded the
-packages that I needed to install, and some packages may already be installed by
-default.
+Listed dependencies are in addition to GNU make and a C compiler.
 
 
 FAQ
