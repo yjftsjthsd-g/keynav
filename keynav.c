@@ -695,31 +695,40 @@ void updategrid(Window win, struct wininfo *info, int apply_clip, int draw) {
   int x_total_offset = 0;
 
   /* clip vertically */
-  for (i = 0; i <= info->grid_cols; i++) {
-    int x_off = 0;
-    if (i > 0) {
-        x_off = -info->border_thickness / 2;
+  int grid_select_row = appstate.grid_nav && appstate.grid_nav_state == GRID_NAV_ROW;
+  int grid_select_col = appstate.grid_nav && appstate.grid_nav_state == GRID_NAV_COL;
+  if(!grid_select_row) { // don't draw vertical lines if we want to select a row in grid mode
+    for (i = 0; i <= info->grid_cols; i++) {
+      int x_off = 0;
+      if (i > 0) {
+          x_off = -info->border_thickness / 2;
+      }
+
+      if (i == info->grid_cols) {
+          x_total_offset = info->w - 1;
+      }
+
+      int x_w_off = 0;
+      if (i == 0 || i == info->grid_cols) {
+          x_w_off = info->border_thickness / 2;
+      }
+
+      cairo_move_to(canvas_cairo, x_total_offset + 1, 0);
+      cairo_line_to(canvas_cairo, x_total_offset + 1, info->h);
+
+      clip_rectangles[rect].x = x_total_offset + x_off;
+      clip_rectangles[rect].y = 0;
+      clip_rectangles[rect].width = info->border_thickness - x_w_off;
+      clip_rectangles[rect].height = info->h;
+
+      if(grid_select_col) { // only show rectangles for selected row in grid mode
+        clip_rectangles[rect].y = appstate.grid_nav_row * cell_height;
+        clip_rectangles[rect].height = cell_height;
+      }
+      rect++;
+
+      x_total_offset += cell_width;
     }
-
-    if (i == info->grid_cols) {
-        x_total_offset = info->w - 1;
-    }
-
-    int x_w_off = 0;
-    if (i == 0 || i == info->grid_cols) {
-        x_w_off = info->border_thickness / 2;
-    }
-
-    cairo_move_to(canvas_cairo, x_total_offset + 1, 0);
-    cairo_line_to(canvas_cairo, x_total_offset + 1, info->h);
-
-    clip_rectangles[rect].x = x_total_offset + x_off;
-    clip_rectangles[rect].y = 0;
-    clip_rectangles[rect].width = info->border_thickness - x_w_off;
-    clip_rectangles[rect].height = info->h;
-    rect++;
-
-    x_total_offset += cell_width;
   }
 
   int y_total_offset = 0;
@@ -743,12 +752,14 @@ void updategrid(Window win, struct wininfo *info, int apply_clip, int draw) {
     cairo_move_to(canvas_cairo, 0, y_total_offset + 1);
     cairo_line_to(canvas_cairo, info->w, y_total_offset + 1);
 
-    clip_rectangles[rect].x = 0;
-    clip_rectangles[rect].y = y_total_offset + y_off;
+    if(!grid_select_col || (i == appstate.grid_nav_row || i == appstate.grid_nav_row + 1)) { // only show selected row in grid mode
+      clip_rectangles[rect].x = 0;
+      clip_rectangles[rect].y = y_total_offset + y_off;
 
-    clip_rectangles[rect].width = info->w;
-    clip_rectangles[rect].height = info->border_thickness - y_w_off;
-    rect++;
+      clip_rectangles[rect].width = info->w;
+      clip_rectangles[rect].height = info->border_thickness - y_w_off;
+      rect++;
+    }
 
     y_total_offset += cell_height;
   }
@@ -794,14 +805,14 @@ void updategridtext(Window win, struct wininfo *info, int apply_clip, int draw) 
   x_off = info->border_thickness / 2;
   y_off = info->border_thickness / 2;
 
-  cairo_text_extents_t te;
-#define FONTSIZE 18
+  cairo_text_extents_t te; 
+  int fontsize = 18;
   if (draw) {
     cairo_new_path(canvas_cairo);
     cairo_select_font_face(canvas_cairo, "Courier", CAIRO_FONT_SLANT_NORMAL,
                            CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(canvas_cairo, FONTSIZE);
-    cairo_text_extents(canvas_cairo, "AA", &te);
+    cairo_set_font_size(canvas_cairo, fontsize);
+    cairo_text_extents(canvas_cairo, "A", &te);
   }
 
   w -= info->border_thickness;
@@ -815,27 +826,43 @@ void updategridtext(Window win, struct wininfo *info, int apply_clip, int draw) 
   //printf("bearing: %f,%f\n", te.x_bearing, te.y_bearing);
   //printf("size: %f,%f\n", te.width, te.height);
 
-  char label[3] = "AA";
+  // check whether we want to select a row
+  row = appstate.grid_nav_row < 0 ? 0 : appstate.grid_nav_row;
+  int select_row = appstate.grid_nav && appstate.grid_nav_state == GRID_NAV_ROW;
 
-  int row_selected = 0;
-  for (col = 0; col < info->grid_cols; col++) {
-    label[0] = 'A';
-    for (row = 0; row < info->grid_rows; row++) {
-      int rectwidth = te.width + 25;
-      int rectheight = te.height + 8;
-      int xpos = cell_width * col + x_off + (cell_width / 2);
-      int ypos = cell_height * row + y_off + (cell_height / 2);
+  // draw either row labels, or column labels
+  char label[2] = "A";
+  int last_rect = 0;
+  for (int idx = 0; idx < info->grid_rows; idx++) {
+    int rectwidth = te.width + 20;
+    int rectheight = te.height + 10;
+    int xpos = cell_width * (select_row ? 0 : idx) + x_off + (cell_width / 2);
+    int ypos = cell_height * (select_row ? idx : row) ;
 
-      row_selected = (appstate.grid_nav && appstate.grid_nav_row == row
-                      && appstate.grid_nav_state == GRID_NAV_COL);
-      //printf("Grid: %c%c\n", label[0], label[1]);
+    // draw column label outside of box
+    if(select_row || ypos == 0) {
+      ypos += y_off + (cell_height / 2);
+    }
+    else {
+      ypos -= y_off;
+    }
 
-      /* If the current column is the one selected by grid nav, use
-       * a different color */
-      //printf("Grid geom: %fx%f @ %d,%d\n",
-             //xpos - rectwidth / 2 + te.x_bearing / 2,
-             //ypos - rectheight / 2 + te.y_bearing / 2,
-             //rectwidth, rectheight);
+    // check whether we need to draw this label
+    int draw_label = 1;
+    if(select_row) {
+      draw_label = ypos > last_rect;
+      if(draw_label) {
+        last_rect = ypos + rectheight;
+      }
+    }
+    else {
+      draw_label = xpos > last_rect;
+      if(draw_label) {
+        last_rect = xpos + rectwidth;
+      }
+    }
+
+    if(draw_label) {
       cairo_rectangle(canvas_cairo,
                       xpos - rectwidth / 2 + te.x_bearing / 2,
                       ypos - rectheight / 2 + te.y_bearing / 2,
@@ -844,28 +871,20 @@ void updategridtext(Window win, struct wininfo *info, int apply_clip, int draw) 
         cairo_path_t *pathcopy;
         pathcopy = cairo_copy_path(canvas_cairo);
         cairo_set_line_width(shape_cairo, 2);
-
-        if (row_selected) {
-          cairo_set_source_rgb(canvas_cairo, 0, .3, .3);
-        } else {
-          cairo_set_source_rgb(canvas_cairo, 0, .2, 0);
-        }
+  
+        cairo_set_source_rgb(canvas_cairo, 0.7, 1, 0.7);
         cairo_fill(canvas_cairo);
         cairo_append_path(canvas_cairo, pathcopy);
-        cairo_set_source_rgb(canvas_cairo, .8, .8, 0);
+        cairo_set_source_rgb(canvas_cairo, 0.5, 0.5, 0);
         cairo_stroke(canvas_cairo);
         cairo_path_destroy(pathcopy);
-
-        if (row_selected) {
-          cairo_set_source_rgb(canvas_cairo, 1, 1, 1);
-        } else {
-          cairo_set_source_rgb(canvas_cairo, .8, .8, .8);
-        }
+  
+        cairo_set_source_rgb(canvas_cairo, 0, 0, 0);
         cairo_fill(canvas_cairo);
         cairo_move_to(canvas_cairo, xpos - te.width / 2, ypos);
         cairo_show_text(canvas_cairo, label);
       }
-
+  
       if (apply_clip) {
         clip_rectangles[rect].x = xpos - rectwidth / 2 + te.x_bearing / 2;
         clip_rectangles[rect].y = ypos - rectheight / 2 + te.y_bearing / 2;
@@ -873,9 +892,8 @@ void updategridtext(Window win, struct wininfo *info, int apply_clip, int draw) 
         clip_rectangles[rect].height =  rectheight + 1;
         rect++;
       }
-      label[0]++;
     }
-    label[1]++;
+    label[0]++;
   } /* Draw rectangles and text */
 } /* void updategridtext */
 
